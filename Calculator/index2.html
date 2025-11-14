@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Basic Calculator</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #74ebd5, #acb6e5);
+    }
+
+    .calculator {
+      background: #222;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      width: 320px;
+    }
+
+    .display {
+      background: #333;
+      color: #fff;
+      font-size: 2rem;
+      text-align: right;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      min-height: 70px;
+      overflow: hidden;
+      word-wrap: break-word;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #444;
+      color: white;
+    }
+
+    button:hover {
+      background: #555;
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    /* Operator buttons */
+    .operator {
+      background: #ff9500;
+    }
+
+    .operator:hover {
+      background: #e68900;
+    }
+
+    /* Equal button */
+    .equal {
+      background: #28a745;
+      grid-row: span 2;
+    }
+
+    .equal:hover {
+      background: #218838;
+    }
+
+    /* Clear and delete */
+    .clear {
+      background: #dc3545;
+    }
+
+    .clear:hover {
+      background: #c82333;
+    }
+
+    .delete {
+      background: #6c757d;
+    }
+
+    .delete:hover {
+      background: #5a6268;
+    }
+
+    /* Zero button spans two columns */
+    .zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="clear" onclick="clearDisplay()">C</button>
+      <button class="delete" onclick="deleteLast()">⌫</button>
+      <button class="operator" onclick="appendToDisplay('/')">/</button>
+      <button class="operator" onclick="appendToDisplay('*')">×</button>
+
+      <button onclick="appendToDisplay('7')">7</button>
+      <button onclick="appendToDisplay('8')">8</button>
+      <button onclick="appendToDisplay('9')">9</button>
+      <button class="operator" onclick="appendToDisplay('-')">−</button>
+
+      <button onclick="appendToDisplay('4')">4</button>
+      <button onclick="appendToDisplay('5')">5</button>
+      <button onclick="appendToDisplay('6')">6</button>
+      <button class="operator" onclick="appendToDisplay('+')">+</button>
+
+      <button onclick="appendToDisplay('1')">1</button>
+      <button onclick="appendToDisplay('2')">2</button>
+      <button onclick="appendToDisplay('3')">3</button>
+      <button class="equal" onclick="calculate()">=</button>
+
+      <button class="zero" onclick="appendToDisplay('0')">0</button>
+      <button onclick="appendToDisplay('.')">.</button>
+    </div>
+  </div>
+
+  <script>
+    let display = document.getElementById('display');
+    let currentInput = '0';
+    let shouldResetDisplay = false;
+
+    // Update display
+    function updateDisplay() {
+      display.textContent = currentInput;
+    }
+
+    // Append number or operator
+    function appendToDisplay(value) {
+      if (shouldResetDisplay) {
+        currentInput = '0';
+        shouldResetDisplay = false;
+      }
+
+      if (currentInput === '0' && value !== '.') {
+        currentInput = value;
+      } else {
+        // Prevent multiple decimals in a number
+        if (value === '.') {
+          const lastNumber = currentInput.split(/[\+\-\*\/]/).pop();
+          if (lastNumber.includes('.')) return;
+        }
+        currentInput += value;
+      }
+      updateDisplay();
+    }
+
+    // Clear display
+    function clearDisplay() {
+      currentInput = '0';
+      shouldResetDisplay = false;
+      updateDisplay();
+    }
+
+    // Delete last character
+    function deleteLast() {
+      if (currentInput.length > 1) {
+        currentInput = currentInput.slice(0, -1);
+      } else {
+        currentInput = '0';
+      }
+      updateDisplay();
+    }
+
+    // Perform calculation
+    function calculate() {
+      try {
+        // Replace × with * for evaluation
+        let expression = currentInput.replace(/×/g, '*');
+        
+        // Prevent eval from running unsafe code
+        if (/[^0-9+\-*/.() ]/.test(expression)) {
+          throw new Error("Invalid characters");
+        }
+
+        let result = Function('"use strict"; return (' + expression + ')')();
+
+        // Handle division by zero
+        if (!isFinite(result)) {
+          result = "Error";
+        } else {
+          result = parseFloat(result.toFixed(8));
+        }
+
+        currentInput = result.toString();
+        shouldResetDisplay = true;
+        updateDisplay();
+      } catch (error) {
+        currentInput = "Error";
+        shouldResetDisplay = true;
+        updateDisplay();
+      }
+    }
+
+    // Initialize
+    updateDisplay();
+
+    // Keyboard support
+    document.addEventListener('keydown', function(e) {
+      if (e.key >= '0' && e.key <= '9') appendToDisplay(e.key);
+      if (e.key === '.') appendToDisplay('.');
+      if (e.key === '+') appendToDisplay('+');
+      if (e.key === '-') appendToDisplay('-');
+      if (e.key === '*') appendToDisplay('*');
+      if (e.key === '/') appendToDisplay('/');
+      if (e.key === 'Enter' || e.key === '=') calculate();
+      if (e.key === 'Escape') clearDisplay();
+      if (e.key === 'Backspace') deleteLast();
+    });
+  </script>
+
+</body>
+</html>
